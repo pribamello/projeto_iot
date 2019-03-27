@@ -1,8 +1,10 @@
+//O sinal enviado é o trigger (pino D5) o sinal de retorno é o ECHO (pino D6)
+
 #include <ESP8266WiFi.h>
 #include <Adafruit_NeoPixel.h>
-#include <DHT.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
+#include <ST_HW_HC_SR04.h> //sensor de distância
 
 // --------------------------------------------------------------------------------------------
 //        UPDATE CONFIGURATION TO MATCH YOUR ENVIRONMENT
@@ -19,14 +21,13 @@
 
 // Add GPIO pins used to connect devices
 #define RGB_PIN D4 // GPIO pin the data line of RGB LED is connected to
-#define DHT_PIN D5 // GPIO pin the data line of the DHT sensor is connected to
+#define TRG_PIN D5 //Pino do sinal enviado
+#define ECHO_PIN D6 //Pino do sinal de retorno
 
-// Specify DHT11 (Blue) or DHT22 (White) sensor
-#define DHTTYPE DHT11
 #define NEOPIXEL_TYPE NEO_GRB + NEO_KHZ800
 
 // Temperatures to set LED by (assume temp in C)
-#define ALARM_COLD 0.0
+#define ALARM_COLD 0.0 //modificar para ler distâncias
 #define ALARM_HOT 30.0
 #define WARN_COLD 10.0
 #define WARN_HOT 25.0
@@ -39,7 +40,11 @@ char pass[] = "ufrj-ibm-cloud";  // your network password
 //        SHOULD NOT NEED TO CHANGE ANYTHING BELOW THIS LINE
 // --------------------------------------------------------------------------------------------
 Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, RGB_PIN, NEOPIXEL_TYPE);
-DHT dht(DHT_PIN, DHTTYPE);
+
+///////////
+ST_HW_HC_SR04 ultrasonicSensor(TRG_PIN,ECHO_PIN); //define o sensor
+ultrasonicSensor.setTimeout(20000); //tempo de espera do sinal ECHO
+//////////
 
 // MQTT objects
 void callback(char* topic, byte* payload, unsigned int length);
@@ -53,8 +58,13 @@ JsonObject status = payload.createNestedObject("d");
 StaticJsonDocument<100> jsonReceiveDoc;
 static char msg[50];
 
-float h = 0.0; // humidity
-float t = 0.0; // temperature
+
+//////////////////////////////////
+float time //Define o valor tempo para o sensor
+float dist //
+//////////////////////////////////
+
+
 unsigned char r = 0; // LED RED value
 unsigned char g = 0; // LED Green value
 unsigned char b = 0; // LED Blue value
@@ -136,15 +146,26 @@ void loop() {
       delay(5000);
     }
   }
+    
 
-  h = dht.readHumidity();
-  t = dht.readTemperature(); // uncomment this line for Celsius
-  // t = dht.readTemperature(true); // uncomment this line for Fahrenheit
+
+///////////////////////////
+  tempo = ultrasonicSensor.getHitTime();
+  jsonDoc["tempo"] = tempo;
+  dist = tempo/29.1 // tempo x velocidade
+  serializeJson(jsonDoc, msg, 50);
+  Serial.println(msg);
+  delay(1000);
+///////////////////////////
+
+
 
   // Check if any reads failed and exit early (to try again).
-  if (isnan(h) || isnan(t)) {
-    Serial.println("Failed to read from DHT sensor!");
-  } else {
+  if (False) {///////////////////////////////////////////////////////////////////////////////////////////////CONFIGURAR ESSA CONDIÇÃO PARA O TIMEOUT DO SENSOR
+    Serial.println("Failed to read from ultrasonic sensor!");
+  } 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////MUDAR AQUI A TEMPERATURA PARA DISTANCIA t --> dist
+  else {
     // Set RGB LED Colour based on temp
     b = (t < ALARM_COLD) ? 255 : ((t < WARN_COLD) ? 150 : 0);
     r = (t >= ALARM_HOT) ? 255 : ((t > WARN_HOT) ? 150 : 0);
@@ -153,8 +174,7 @@ void loop() {
     pixel.show();
 
     // Print Message to console in JSON format
-    status["temp"] = t;
-    status["humidity"] = h;
+    status["Distância"] = dist;
     serializeJson(jsonDoc, msg, 50);
     Serial.println(msg);
     if (!mqtt.publish(MQTT_TOPIC, msg)) {
