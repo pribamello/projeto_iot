@@ -11,7 +11,7 @@
 #define MQTT_USER "use-token-auth"
 #define MQTT_TOKEN "Pribamello_42"
 #define MQTT_TOPIC "iot-2/evt/status/fmt/json"  //dados devolvidos
-#define MQTT_TOPIC_ITERATION "iot-2/cmd/iteration/fmt/json" //dados recebidos
+#define MQTT_TOPIC_DISTANCE "iot-2/cmd/distance/fmt/json" //dados recebidos
 
 #define RGB_PIN D4 // Pino do LED
 #define TRG_PIN D5 //Pino do sinal enviado (trigger)
@@ -20,12 +20,12 @@
 #define NEOPIXEL_TYPE NEO_GRB + NEO_KHZ800 //Definições do LED
 
 //Distancias que definem a cor do LED (em centímetros)
-#define ALARM_CLOSE 10.0
-#define WARN_CLOSE 30.0
+#define ALARM_CLOSE 15.0
+#define WARN_CLOSE 50.0
 
 //Configurações do WiFi
-char ssid[] = "bia"; //Nome da rede
-char pass[] = "tsugihagi"; //Senha da rede
+char ssid[] = "cloud-iot-ufrj"; //Nome da rede
+char pass[] = "ufrj-ibm-cloud"; //Senha da rede
 
 Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, RGB_PIN, NEOPIXEL_TYPE);
 
@@ -46,17 +46,14 @@ float tempo, dist;
 unsigned char r = 0; //valores da cor do LED 
 unsigned char g = 0;
 
-//////////////////////////////////////////////
 //Variáveis usadas na parte que calcula a velocidade do som
 float tempotemp;
 float vsom, vsomtemp;
 float distpreset = 0.0; //Distância a ser fornecida pelo usuario para calcular a velocidade do som
 int i; //Medidas da velocidade do som
 int imax = 30;
-//////////////////////////////////////////////
 
 // Função que recebe os comandos da nuvem
-////////////Por enquanto alterei para receber o numero de iterações apenas
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -70,13 +67,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println(err.c_str());
   } else {
     JsonObject cmdData = jsonReceiveDoc.as<JsonObject>();
-    if (0 == strcmp(topic, MQTT_TOPIC_ITERATION)) {
+    if (0 == strcmp(topic, MQTT_TOPIC_DISTANCE)) {
       //valid message received
-      //imax = cmdData["Iteracoes"].as<int32_t>(); // this form allows you specify the type of the data you want from the JSON object
-      //Serial.print("Número de iterações foi modificado:");
-      distpreset = float(cmdData["Distance"].as<int32_t>()); // this form allows you specify the type of the data you want from the JSON object
-      //distpreset = cmdData["Distance"].as<float_t>() //OLHA AQUI OÓÓ, NÃO SEI SE ASSIM FUNCIONA, TESTE NO SENSOR
-      //Serial.print("A distância escolhida foi modificada: ");
+      distpreset = cmdData["Distance"].as<float_t>();
+      Serial.print("A distância escolhida foi modificada: ");
       Serial.println(distpreset);
       jsonReceiveDoc.clear();
     } else {
@@ -84,8 +78,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
   }
 }
-
-
 
 void setup() {
  
@@ -109,7 +101,7 @@ void setup() {
   while(! mqtt.connected()){
     if (mqtt.connect(MQTT_DEVICEID, MQTT_USER, MQTT_TOKEN)) { // Token Authentication
       Serial.println("MQTT Conectado");
-      mqtt.subscribe(MQTT_TOPIC_ITERATION);
+      mqtt.subscribe(MQTT_TOPIC_DISTANCE);
     } else {
       Serial.println("MQTT Failed to connect! ... retrying");
       delay(500);
@@ -125,7 +117,7 @@ void loop() {
     // Attempt to connect
     if (mqtt.connect(MQTT_DEVICEID, MQTT_USER, MQTT_TOKEN)) {
       Serial.println("MQTT Connected");
-      mqtt.subscribe(MQTT_TOPIC_ITERATION);
+      mqtt.subscribe(MQTT_TOPIC_DISTANCE);
       mqtt.loop();
     } else {
       Serial.println("MQTT Failed to connect!");
@@ -137,50 +129,41 @@ void loop() {
   ultrasonicSensor.setTimeout(20000);
   tempo = ultrasonicSensor.getHitTime();
   dist = tempo/29.1; //dist = tempo x velocidade_som
- /////////Colocar condiçao de erro
-  status["Distância"] = dist;
-  //jsonDoc["Tempo"] = tempo;
+  if(dist!=0){
+    status["Distância"] = dist;
+    //jsonDoc["Tempo"] = tempo;
  
-//Ajuste de cores do LED
-  r = (dist <= ALARM_CLOSE) ? 255 : ((dist < WARN_CLOSE) ? dist/ALARM_CLOSE*255 : 0);
-  g = (dist < WARN_CLOSE) ? ((dist > ALARM_CLOSE) ? dist/WARN_CLOSE*255 : 0) : 255;
-  pixel.setPixelColor(0,r,g,0);
-  pixel.show();
-
-//ATENÇÃO: EXCLUIR ESSA PARTE!!!!!!!!
-//distpreset = 30.0; //Exluir essa linha pois a distância será fornecida pelo app
-//ATENÇÃO: EXCLUIR ESSA PARTE!!!!!!!!
-
-//////////////////////////////////////////////
-  if(distpreset>0.01 && imax != 0){
-    i = 0; //zera o contador
-    vsomtemp = 0;
-    vsom = 0; //zera a velocidade
+    //Ajuste de cores do LED
+    r = (dist <= ALARM_CLOSE) ? 255 : ((dist < WARN_CLOSE) ? dist/ALARM_CLOSE*255 : 0);
+    g = (dist < WARN_CLOSE) ? ((dist > ALARM_CLOSE) ? dist/WARN_CLOSE*255 : 0) : 255;
+    pixel.setPixelColor(0,r,g,0);
+    pixel.show();
+    
+    if(distpreset>0.01 && imax != 0){
+      i = 0; //zera o contador
+      vsomtemp = 0;
+      vsom = 0; //zera a velocidade
    
-    while(i<imax){
-      tempotemp = ultrasonicSensor.getHitTime();
-      if(tempotemp!=0){ //se o valor obtido do hitTime for zero, ele pula essa parte e refaz a medida
-        vsomtemp = distpreset/tempotemp;
-        vsom += vsomtemp;
-        i+=1;
+      while(i<imax){
+        tempotemp = ultrasonicSensor.getHitTime();
+        if(tempotemp!=0){ //se o valor obtido do hitTime for zero, ele pula essa parte e refaz a medida
+          vsomtemp = distpreset/tempotemp;
+          vsom += vsomtemp;
+          i+=1;
         }
       }
-     
-    //tempotemp = ultrasonicSensor.getHitTime();      
-    //vsom = distpreset/tempotemp;
-    vsom = 10000*vsom/float(imax);//retorna o resultado em m/s
-    status["Vsom"] = vsom;
+      vsom = 10000*vsom/float(imax);//retorna o resultado em m/s
+      status["Vsom"] = vsom;
     }
-//////////////////////////////////////////////
-
-  serializeJson(jsonDoc, msg, 60);
-  Serial.println(msg);
-  if (!mqtt.publish(MQTT_TOPIC, msg)) {
-    Serial.println("MQTT Publish failed");
+  
+    serializeJson(jsonDoc, msg, 60);
+    Serial.println(msg);
+    if (!mqtt.publish(MQTT_TOPIC, msg)) {
+      Serial.println("MQTT Publish failed");
+    }
+  } else {
+    Serial.println("Erro de leitura!");
   }
-  Serial.print("Número de iteraçoes:");
-  Serial.print(imax);
-  Serial.println();
   delay(1000);
   //delay(10000);
 }
