@@ -31,7 +31,7 @@ unsigned char g = 0; //LED Green value
 //Variáveis usadas na parte que calcula a velocidade do som
 float tempotemp;
 float vsom, vsomtemp;
-float distpreset = 99999999.0; //Distância a ser fornecida pelo usuario para calcular a velocidade do som
+float distpreset = 0.0; //Distância a ser fornecida pelo usuario para calcular a velocidade do som
 int i; //Medidas da velocidade do som
 int imax = 30; //pegar da nuvem
 //////////////////////////////////////////////
@@ -61,7 +61,7 @@ distpreset = 30.0; //Exluir essa linha pois a distância será fornecida pelo ap
 //ATENÇÃO: EXCLUIR ESSA PARTE!!!!!!!!
 
 //////////////////////////////////////////////
-  if(abs(distpreset - 99999999.0)>0.001 && imax != 0){
+  if(distpreset>0.01 && imax != 0){
     i = 0; //zera o contador
     vsomtemp = 0;
     vsom = 0; //zera a velocidade
