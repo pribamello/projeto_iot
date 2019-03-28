@@ -51,8 +51,8 @@ void loop() {
   jsonDoc["Tempo"] = tempo;
 // dist < limite vermelho = amarelo
 // dist <limite amarelo (warn) = verde
-  r = (dist >= ALARM_CLOSE) ? 255 : ((dist > WARN_CLOSE) ? dist/ALARM_CLOSE*255 : 0);
-  g = (dist > WARN_CLOSE) ? ((t < ALARM_CLOSE) ? dist/WARN_CLOSE*255 : 0) : 255);
+  r = (dist <= ALARM_CLOSE) ? 255 : ((dist < WARN_CLOSE) ? dist/ALARM_CLOSE*255 : 0);
+  g = (dist < WARN_CLOSE) ? ((dist > ALARM_CLOSE) ? dist/WARN_CLOSE*255 : 0) : 255;
   pixel.setPixelColor(0,r,g,0);
   pixel.show();
 
