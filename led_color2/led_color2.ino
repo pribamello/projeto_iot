@@ -39,6 +39,7 @@ int imax = 30; //pegar da nuvem
 
 void setup() {
   Serial.begin(115200);
+  pixel.begin();
   while(!Serial);
 }
 
@@ -48,9 +49,8 @@ void loop() {
   tempo = ultrasonicSensor.getHitTime();
   dist = tempo/29.1; //dist = tempo x velocidade_som
   jsonDoc["Distância"] = dist;
-  jsonDoc["Tempo"] = tempo;
-// dist < limite vermelho = amarelo
-// dist <limite amarelo (warn) = verde
+//jsonDoc["Tempo"] = tempo;
+//Ajuste de cores do LED
   r = (dist <= ALARM_CLOSE) ? 255 : ((dist < WARN_CLOSE) ? dist/ALARM_CLOSE*255 : 0);
   g = (dist < WARN_CLOSE) ? ((dist > ALARM_CLOSE) ? dist/WARN_CLOSE*255 : 0) : 255;
   pixel.setPixelColor(0,r,g,0);
