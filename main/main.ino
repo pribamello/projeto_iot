@@ -61,6 +61,7 @@ int imax = 30;
 float h = 0.0; // umidade
 float t = 0.0; // temperatura
 float cth = 0.0; // velocidade do som, em função da temperatura e da umidade
+float distc;
 
 // Função que recebe os comandos da nuvem
 void callback(char* topic, byte* payload, unsigned int length) {
