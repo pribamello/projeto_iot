@@ -2,6 +2,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
+#include <DHT.h>
 #include <ST_HW_HC_SR04.h> //sensor de distância  
 
 //Configurações do MQTT
@@ -16,6 +17,7 @@
 #define RGB_PIN D4 // Pino do LED
 #define TRG_PIN D5 //Pino do sinal enviado (trigger)
 #define ECHO_PIN D6 //Pino do sinal de retorno (echo)
+#define DHT_PIN D7 //Pino do sinal do DHT
 
 #define NEOPIXEL_TYPE NEO_GRB + NEO_KHZ800 //Definições do LED
 
@@ -52,6 +54,11 @@ float vsom, vsomtemp;
 float distpreset = 0.0; //Distância a ser fornecida pelo usuario para calcular a velocidade do som
 int i; //Medidas da velocidade do som
 int imax = 30;
+
+//Método da temperatura
+float h = 0.0; // humidade
+float t = 0.0; // temperatura
+float cth = 0.0; // velocidade do som, em função da temperatura e da humidade
 
 // Função que recebe os comandos da nuvem
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -124,13 +131,22 @@ void loop() {
       delay(5000);
     }
   }
+  
+  h = dht.readHumidity(); //Mede humidade
+  t = dht.readTemperature(); // Mede temperatura
+  cth = 331.4+0.606*t+0.0124*h; // Descobre a velocidade do som
 
   ST_HW_HC_SR04 ultrasonicSensor(TRG_PIN,ECHO_PIN);
   ultrasonicSensor.setTimeout(2000);
   tempo = ultrasonicSensor.getHitTime();
   dist = tempo/29.1; //dist = tempo x velocidade_som
+  distc = tempo*cth*100; // distância(cm), usando velocidade do som f(t,h)
   if(dist!=0){
-    status["Distancia"] = dist;
+    status["distance"] = dist;
+    status["distanceth"] = distc;
+    status["temp"] = t;
+    status["humidity"] = h;
+    status["vsound"] = cth;
     //jsonDoc["Tempo"] = tempo;
  
     //Ajuste de cores do LED
