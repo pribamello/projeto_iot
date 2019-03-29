@@ -103,6 +103,7 @@ void setup() {
   Serial.println("");
   Serial.println("WiFi Conectado");
   pixel.begin();
+  dht.begin();
   
  // Connect to MQTT - IBM Watson IoT Platform
   while(! mqtt.connected()){
