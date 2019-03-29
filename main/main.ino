@@ -56,9 +56,9 @@ int i; //Medidas da velocidade do som
 int imax = 30;
 
 //Método da temperatura
-float h = 0.0; // humidade
+float h = 0.0; // umidade
 float t = 0.0; // temperatura
-float cth = 0.0; // velocidade do som, em função da temperatura e da humidade
+float cth = 0.0; // velocidade do som, em função da temperatura e da umidade
 
 // Função que recebe os comandos da nuvem
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -132,21 +132,26 @@ void loop() {
     }
   }
   
-  h = dht.readHumidity(); //Mede humidade
+  h = dht.readHumidity(); //Mede umidade
   t = dht.readTemperature(); // Mede temperatura
-  cth = 331.4+0.606*t+0.0124*h; // Descobre a velocidade do som
 
   ST_HW_HC_SR04 ultrasonicSensor(TRG_PIN,ECHO_PIN);
   ultrasonicSensor.setTimeout(2000);
   tempo = ultrasonicSensor.getHitTime();
   dist = tempo/29.1; //dist = tempo x velocidade_som
-  distc = tempo*cth*100; // distância(cm), usando velocidade do som f(t,h)
-  if(dist!=0){
-    status["distance"] = dist;
+  
+  if (isnan(h) || isnan(t)) { //Checa se houve erro de leitura
+    Serial.println("Erro no sensor DHT!");
+  } else {
+    cth = 331.4+0.606*t+0.0124*h; // Calcula a velocidade do som
+    distc = tempo*cth*100; //usando velocidade do som f(t,h)
     status["distanceth"] = distc;
     status["temp"] = t;
     status["humidity"] = h;
     status["vsound"] = cth;
+  }
+  if(dist!=0){
+    status["distance"] = dist;
     //jsonDoc["Tempo"] = tempo;
  
     //Ajuste de cores do LED
@@ -171,7 +176,7 @@ void loop() {
       vsom = 10000*vsom/float(imax);//retorna o resultado em m/s
       status["Vsom"] = vsom;
     }
-  
+ 
     serializeJson(jsonDoc, msg, 60);
     Serial.println(msg);
     if (!mqtt.publish(MQTT_TOPIC, msg)) {
