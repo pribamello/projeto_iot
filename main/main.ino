@@ -19,6 +19,7 @@
 #define ECHO_PIN D6 //Pino do sinal de retorno (echo)
 #define DHT_PIN D7 //Pino do sinal do DHT
 
+#define DHTTYPE DHT11 //Tipo do sensor DHT
 #define NEOPIXEL_TYPE NEO_GRB + NEO_KHZ800 //Definições do LED
 
 //Distancias que definem a cor do LED (em centímetros)
@@ -29,6 +30,7 @@
 char ssid[] = "cloud-iot-ufrj"; //Nome da rede
 char pass[] = "ufrj-ibm-cloud"; //Senha da rede
 
+DHT dht(DHT_PIN, DHTTYPE);
 Adafruit_NeoPixel pixel = Adafruit_NeoPixel(1, RGB_PIN, NEOPIXEL_TYPE);
 
 //Objetos MQTT
