@@ -130,7 +130,7 @@ void loop() {
   tempo = ultrasonicSensor.getHitTime();
   dist = tempo/29.1; //dist = tempo x velocidade_som
   if(dist!=0){
-    status["Distância"] = dist;
+    status["Distancia"] = dist;
     //jsonDoc["Tempo"] = tempo;
  
     //Ajuste de cores do LED
