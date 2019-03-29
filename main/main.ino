@@ -39,11 +39,11 @@ WiFiClient wifiClient;
 PubSubClient mqtt(MQTT_HOST, MQTT_PORT, callback, wifiClient);
 
 //Variáveis para transmitir os dados
-StaticJsonDocument<100> jsonDoc;
+StaticJsonDocument<200> jsonDoc;
 JsonObject payload = jsonDoc.to<JsonObject>();
 JsonObject status = payload.createNestedObject("d");
 StaticJsonDocument<100> jsonReceiveDoc;
-static char msg[60];
+static char msg[200];
 
 //Define variáveis
 float tempo, dist;
@@ -148,11 +148,11 @@ void loop() {
     Serial.println("Erro no sensor DHT!");
   } else {
     cth = 331.4+0.606*t+0.0124*h; // Calcula a velocidade do som
-    distc = tempo*cth*100; //usando velocidade do som f(t,h)
-    status["distanceth"] = distc;
-    status["temp"] = t;
-    status["humidity"] = h;
-    status["vsound"] = cth;
+    distc = tempo*cth/10000; //usando velocidade do som f(t,h)
+    status["d_th"] = distc;
+    status["t"] = t;
+    status["h"] = h;
+    status["vs"] = cth;
   }
   if(dist!=0){
     status["distance"] = dist;
@@ -181,7 +181,7 @@ void loop() {
       status["Vsom"] = vsom;
     }
  
-    serializeJson(jsonDoc, msg, 60);
+    serializeJson(jsonDoc, msg, 200);
     Serial.println(msg);
     if (!mqtt.publish(MQTT_TOPIC, msg)) {
       Serial.println("MQTT Publish failed");
