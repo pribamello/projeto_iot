@@ -126,7 +126,7 @@ void loop() {
   }
 
   ST_HW_HC_SR04 ultrasonicSensor(TRG_PIN,ECHO_PIN);
-  ultrasonicSensor.setTimeout(20000);
+  ultrasonicSensor.setTimeout(2000);
   tempo = ultrasonicSensor.getHitTime();
   dist = tempo/29.1; //dist = tempo x velocidade_som
   if(dist!=0){
